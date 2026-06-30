@@ -75,5 +75,3 @@ explanation_captum = explainer_captum(
 print(explanation_captum)
 print("Captum Max Edge Mask Importance:", explanation_captum.edge_mask.max().item())
 print("Captum Max Node/Feature Importance:", explanation_captum.node_mask.max().item())
-
-# this is a nigga
