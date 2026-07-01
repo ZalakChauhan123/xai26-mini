@@ -1,35 +1,43 @@
-# IMPORTS
+#!/usr/bin/env python
+# coding: utf-8
+#
+# 2__Graph_PreProcessing.py
+# -----------------------------------------------------------------------------
+# Turns the AIFB RDF graph into the tensors an R-GCN needs:
+#   node_to_id / id_to_node, predicate_to_id / id_to_relation,
+#   edge_index, edge_type and the label tensor y.
+#
+# Converted from notebooks/2__Graph_PreProcessing.ipynb.
+# The same logic lives in src/feature_engineering.py, which is the importable
+# library version used by the training / explainability stages.
+# -----------------------------------------------------------------------------
+
+from pathlib import Path
+
 import rdflib as rdf
 from rdflib import Graph
 from rdflib import Literal
 import torch
 from collections import Counter
-from pathlib import Path
 
-# Resolve the repo root from this file's location so the dataset loads
-# no matter what the current working directory is.
+# ---------------------------------------------------------------------------
+# Paths (resolved relative to the repo root, independent of the CWD)
+# ---------------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parents[1]
 DATASET_PATH = ROOT / "dataset" / "aifbfixed_complete.n3"
 
-
-# LOAD GRAPH DATASET
 g = Graph()
 g.parse(str(DATASET_PATH))
 
 print("Graph loaded successfully!")
 
 
-
-# ---------------------------------
-# NODE
-# ---------------------------------
-
-
-# Node - Create Node IDs
+# ---------------------------------------------------------------------------
+# NODES
+# ---------------------------------------------------------------------------
 all_nodes = set()
 
-for s,p,o in g:
-
+for s, p, o in g:
     # subject is a node
     all_nodes.add(s)
     # Only add Object if not literal
@@ -50,27 +58,23 @@ id_to_node = {}
 for node, idx in node_to_id.items():
     id_to_node[idx] = node
 
-
 # Test the Mapping
-# print("\nSample Node IDs:\n")
+print("\nSample Node IDs:\n")
 for i, (node, idx) in enumerate(node_to_id.items()):
-    # print(idx, node)
+    print(idx, node)
 
-    if i >= 3:
+    if i >= 10:
         break
 
 
-
-# ----------------
+# ---------------------------------------------------------------------------
 # EDGES
-# ----------------
-
-# Edge - Create Predicate IDs
+# ---------------------------------------------------------------------------
 predicate_to_id = {}
+
 relation_id = 0
 
 for s, p, o in g:
-
     # Skip Literals
     if isinstance(o, Literal):
         continue
@@ -81,13 +85,8 @@ for s, p, o in g:
 
 print("Total Relation Types :- ", len(predicate_to_id))
 
-# Reverse Mapping
+# Reverse Mapping (needed by the explainability stages)
 id_to_relation = {idx: rel for rel, idx in predicate_to_id.items()}
-
-
-
-
-# Edge - RDF Triple into Edge IDs & Edge Types
 
 # RDF triple into Edge Ids
 REMOVE_RELATIONS = [
@@ -99,7 +98,6 @@ edges = []
 edge_types = []
 
 for s, p, o in g:
-
     # Skip Literals
     if isinstance(o, Literal):
         continue
@@ -116,11 +114,9 @@ for s, p, o in g:
     edges.append((source, target))
     edge_types.append(relation_id)
 
-# print(edges[0:10])
-# print(edge_types)
+print(edges[0:10])
 
-
-# Seperate Edges 
+# Seperate Edges
 edge_ids = []
 for s, p, o in g:
     if isinstance(o, Literal):
@@ -130,20 +126,16 @@ for s, p, o in g:
     edge_id = len(edge_ids)
     edge_ids.append((edge_id, source, target, p))
 
-# print(edge_ids[0:10])
+print(edge_ids[0:10])
 
-
-
-# Edge - Create Edge_index & Edge Type Tensors
 # Edge Index
 edge_index = torch.tensor(
     edges,
     dtype = torch.long
 ).t().contiguous()
 
-# print("Edge Index Shape : ", edge_index.shape)
-# print("edge_index : ",edge_index[ :, :10 ])
-
+print("Edge Index Shape : ", edge_index.shape)
+print("edge_index : ", edge_index[:, :10])
 
 # Convert Edge Type into Tensors
 edge_type = torch.tensor(
@@ -151,16 +143,12 @@ edge_type = torch.tensor(
     dtype = torch.long
 )
 
-# print("Edge Type Shape : ", edge_type.shape)
-# print("edge_type : ", edge_type)
+print("Edge Type Shape : ", edge_type.shape)
 
 
-
-
-# --------------------
+# ---------------------------------------------------------------------------
 # LABELS
-# --------------------
-
+# ---------------------------------------------------------------------------
 LABEL_PREDICATE = "http://swrc.ontoware.org/ontology#affiliation"
 
 # Collect unique Labels
@@ -170,37 +158,26 @@ for s, p, o in g:
     if str(p) == LABEL_PREDICATE:
         unique_labels.add(o)
 
-# print("Classes :- ", unique_labels)
-# print("Total Classes :- ", len(unique_labels))
-
-
+print("Classes :- ", unique_labels)
+print("Total Classes :- ", len(unique_labels))
 
 # Create label IDs
 label_to_id = {
-
-    label : idx
+    label: idx
     for idx, label in enumerate(unique_labels)
 }
-# print("Label IDs :- ",label_to_id)
+print("Label IDs :- ", label_to_id)
 
-
-
-# Label - Create Node Labels
+# Create Node Labels
 labels = {}
 
 for s, p, o in g:
-
     if str(p) == LABEL_PREDICATE:
-
         node_id = node_to_id[s]
         class_id = label_to_id[o]
         labels[node_id] = class_id
 
-# print(node_id)
-# print(class_id)
-# print(labels)
-
-# Label - Convert Labels to Tensors
+# Convert Labels to Tensors
 num_nodes = len(node_to_id)
 
 y = torch.full(
@@ -212,6 +189,5 @@ y = torch.full(
 for node_id, class_id in labels.items():
     y[node_id] = class_id
 
-# print(y.shape)
-# print(y[:20])
-print(torch.unique(y))
+print("y shape :", y.shape)
+print("Unique labels in y :", torch.unique(y))
