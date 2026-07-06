@@ -9,6 +9,8 @@ from torch_geometric.explain import Explainer
 from torch_geometric.explain.algorithm import GNNExplainer
 
 # visulisation Imports
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 # Other imports
@@ -88,7 +90,7 @@ import torch.nn.functional as F
 from torch_geometric.nn import RGCNConv
 
 # Create a custom neural network model
-class RGCN(torch.nn.Module): 
+class RGCN(torch.nn.Module):
 
     def __init__(
             self,
@@ -112,7 +114,7 @@ class RGCN(torch.nn.Module):
             num_classes,
             num_relations
         )
-    
+
     def forward( self, x, edge_index, edge_type ):
         x = self.conv1( x, edge_index, edge_type )
         x = F.relu(x)
@@ -142,7 +144,7 @@ out = model(
     data.edge_type
 )
 
-#print(out.shape)
+# print(out.shape)
 
 
 # LOSS FUNCTION & OPTIMIZER
@@ -158,37 +160,37 @@ optimizer = torch.optim.Adam(
 
 
 # TRAINING LOOP
-# for epoch in range(1, 201):
+for epoch in range(1, 201):
 
-#     # Step-1 : Model Train
-#     model.train()
+    # Step-1 : Model Train
+    model.train()
 
-#     # Step-2 : clear old learning gradiants
-#     optimizer.zero_grad()
+    # Step-2 : clear old learning gradiants
+    optimizer.zero_grad()
 
-#     # Step-3 : Forward Pass
-#     out = model(
-#         data.x,
-#         data.edge_index,
-#         data.edge_type
-#     )
+    # Step-3 : Forward Pass
+    out = model(
+        data.x,
+        data.edge_index,
+        data.edge_type
+    )
 
-#     # Step-4 : Loss Calculation
-#     loss = loss_function(
-#         out[data.train_mask],
-#         data.y[data.train_mask]
-#     )
+    # Step-4 : Loss Calculation
+    loss = loss_function(
+        out[data.train_mask],
+        data.y[data.train_mask]
+    )
 
-#     # Step-5 : BackwordPropogation
-#     loss.backward()
+    # Step-5 : BackwordPropogation
+    loss.backward()
 
-#     # Update Weights
-#     optimizer.step()
+    # Update Weights
+    optimizer.step()
 
-#     if epoch % 20 == 0:
-#         print(
-#             f"Epoch: {epoch}, Loss: {loss.item():.4f}"
-#         )
+    if epoch % 20 == 0:
+        print(
+            f"Epoch: {epoch}, Loss: {loss.item():.4f}"
+        )
 
 
 

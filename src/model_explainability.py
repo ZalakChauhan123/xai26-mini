@@ -23,12 +23,12 @@ class GCN(torch.nn.Module):
         super().__init__()
         self.con1 = GCNConv(num_features, hidden_channels)
         self.conv2 = GCNConv(hidden_channels, num_classes)
-    
+
     def forward(self, x, edge_index, edge_weight=None, **kwargs):
         # Safeguard: ensure edge_weight is a valid Tensor before passing to GCNConv
         if not isinstance(edge_weight, torch.Tensor):
             edge_weight = None
-            
+
         x = self.con1(x, edge_index, edge_weight=edge_weight)
         x = F.relu(x)
         x = self.conv2(x, edge_index, edge_weight=edge_weight)
@@ -73,6 +73,4 @@ explaination_gnn = explainer(
 
 print("\n=== GNNExplainer Results ===")
 print(explaination_gnn)
-print("GNNExplainer Max Edge Mask:", explaination_gnn.edge_mask.max().item())
-
-
+print("Max Edge Mask Importance:", explaination_gnn.edge_mask.max().item())

@@ -1,20 +1,17 @@
-Preview of Epoch Outputs
+Analysis File
 
-Epoch: 20, Loss: 0.1661
-Epoch: 40, Loss: 0.0359
-Epoch: 60, Loss: 0.0117
-Epoch: 80, Loss: 0.0058
-Epoch: 100, Loss: 0.0035
-Epoch: 120, Loss: 0.0025
-Epoch: 140, Loss: 0.0018
-Epoch: 160, Loss: 0.0014
-Epoch: 180, Loss: 0.0012
-Epoch: 200, Loss: 0.0010
+Why we take Top 20 Node Types and Predicated Explaination
+
+Semantic web graphs heavily follow a Power-Law (Zipfian) distribution. 
+A tiny fraction of relations (like publication, author, project) appear thousands of times, 
+while hundreds of highly specific predicates or literal attributes appear only once or twice across the entire network. 
+Including these ultra-rare relations introduces extreme sparsity into the R-GCN's relation-specific adjacency matrices, 
+leading to zero-gradient updates for those channels during backpropagation.
+Filtering for the top 20 preserves the dense, highly-connected core of the network.
 
 
-Explainibility Tasks
+--------------------------------------
 
-1. Single Node
-2. Multiple Nodes
-3. SubGraph
-4. wrong prediction analysis
+
+Explainability
+
