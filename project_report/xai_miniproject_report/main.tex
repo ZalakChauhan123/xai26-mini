@@ -1,0 +1,454 @@
+% This is samplepaper.tex, a sample chapter demonstrating the
+% LLNCS macro package for Springer Computer Science proceedings;
+% Version 2.21 of 2022/01/12
+%
+\documentclass[runningheads]{llncs}
+%
+\usepackage[T1]{fontenc}
+% T1 fonts will be used to generate the final print and online PDFs,
+% so please use T1 fonts in your manuscript whenever possible.
+% Other font encondings may result in incorrect characters.
+%
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{placeins}
+\usepackage{booktabs}
+% Used for displaying a sample figure. If possible, figure files should
+% be included in EPS format.
+%
+% If you use the hyperref package, please uncomment the following two lines
+% to display URLs in blue roman font according to Springer's eBook style:
+%\usepackage{color}
+%\renewcommand\UrlFont{\color{blue}\rmfamily}
+%\urlstyle{rm}
+%
+\begin{document}
+%
+\title{Explainable Node Classification on the AIFB Graph Dataset using R-GCN with Local and Global Explanation Methods}
+%
+%\titlerunning{Abbreviated paper title}
+% If the paper title is too long for the running head, you can set
+% an abbreviated paper title here
+%
+\author{Zalak Chauhan(4081760 )\inst{1}
+\and Ankith Bharadwaj (4110733)\inst{1}
+\and Aditi Shamrao Parulekar (4110953)\inst{1}}
+
+\authorrunning{A. Parulekar et al.}
+
+\institute{University of Paderborn, Germany\\
+Group Project, Explainable AI Course, Summer Semester 2026}
+%
+\maketitle              % typeset the header of the contribution
+%
+\begin{abstract}
+
+
+This mini-project presents the application of a Relational Graph Convolutional Network (R-GCN) to the AIFB RDF knowledge graph for multi-class node classification of research group affiliations. The RDF graph is transformed into a graph representation with one-hot encoded node features and relation-aware message passing over RDF triples. The model is trained on labeled nodes using a train-test split and optimized with cross-entropy loss. Exploratory data analysis is performed to examine the distributions of RDF predicates, node types, and class labels. To improve model interpretability, GNNExplainer and Captum Integrated Gradients are applied to generate local and global explanations by identifying influential RDF relations. The quality of the generated explanations is further evaluated through a faithfulness analysis based on edge perturbation, confidence drop, and prediction label changes. This work demonstrates a complete pipeline for graph learning and explainability on RDF knowledge graphs.
+
+
+\keywords{ Relational Graph Convolutional Network \and GNNExplainer \and Captum Integrated Gradients.}
+\end{abstract}
+%
+%
+%
+\section{Introduction}
+
+Graph-structured data is widely used in knowledge graphs, scientific databases, and social networks. Data is represented as nodes (entities) and edges (relationships). Unlike tabular data, graphs are irregular and difficult for traditional machine learning methods to model. Graph Neural Networks (GNNs) address this by learning node representations through message passing over neighboring nodes.
+
+In this project, we perform multi-class node classification on the AIFB RDF knowledge graph using a Relational Graph Convolutional Network (R-GCN). The model handles multiple types of relation using relation-specific transformations. Although R-GCN achieves strong performance, it is difficult to interpret. Therefore, we apply explainability methods to understand the model predictions and identify important RDF relations.
+The overall workflow of this project consists of the following four main steps:
+
+\begin{enumerate}
+    \item \textbf{Data Preparation and Graph Construction:} The AIFB RDF graph is processed by extracting entities and relations, performing analysis, building the graph, preparing labels, removing label leak relations, and creating the train--test split.
+
+    \item \textbf{R-GCN Model Training:} A two-layer R-GCN is trained for multi-class node classification using relation-aware message passing over the graph.
+
+    \item \textbf{Local Explainability:} Individual predictions are explained using GNNExplainer and Captum Integrated Gradients to identify important RDF relations.
+
+    \item \textbf{Global Explainability and Evaluation:} Local explanations are aggregated across nodes to find global relation importance, and faithfulness is evaluated using perturbation, confidence drop, and prediction changes.
+\end{enumerate}
+The remainder of this report is organized as follows. Section~2 presents the dataset and preprocessing. Section~3 describes the R-GCN model and its training. Section~4 covers local and global explainability with faithfulness analysis. Section~5 concludes the report, followed by contributions, acknowledgments, declaration of AI tools, and references.
+\section{Data Analysis}
+\subsection{Dataset Loading and Graph Structure Analysis}
+
+The AIFB dataset is a knowledge graph represented as RDF triples in subject--predicate--object form. It was loaded using RDFLib, resulting in 29,226 triples. After preprocessing, we obtained 2,835 unique nodes and 47 predicates. Literal attributes were removed as they do not contribute to structural message passing in GNNs.
+
+The predicate distribution is highly skewed, with a small number of relations dominating the graph, including \textit{rdf:type} (4,174), \textit{publication} (4,163), \textit{author} (3,986), and \textit{isAbout} (2,477). These form the core semantic structure of the dataset, centered around publications and research topics.
+
+The most informative reasoning chain in the graph is:
+\[
+\text{Researcher} \rightarrow \textit{publishes} \rightarrow \text{Paper} \rightarrow \textit{isAbout} \rightarrow \text{Topic}
+\]
+
+For graph construction, each entity is mapped to a unique ID, resulting in 2,835 nodes. Each predicate is mapped to a relation ID for use in the R-GCN. The final graph is represented using $\texttt{edge\_index}$ and $\texttt{edge\_type}$ tensors, containing 20,338 edges and 24 relation types.
+
+\begin{table}[h]
+\centering
+\caption{Graph statistics of the AIFB dataset after preprocessing}
+\begin{tabular}{lr}
+\hline
+\textbf{Statistic} & \textbf{Value} \\
+\hline
+RDF Triples & 29,226 \\
+Unique Nodes & 2,835 \\
+Unique Predicates & 47 \\
+Retained Relations (R-GCN) & 24 \\
+Graph Edges & 20,338 \\
+Label Classes & 5 \\
+
+\hline
+\end{tabular}
+\label{tab:aifb_stats}
+\end{table}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.7\textwidth]{Top 20 - Predicate Distribution.png}
+    \caption{Top RDF predicate frequency distribution in the AIFB knowledge graph.}
+\end{figure}
+
+
+
+The RDF graph was converted into a numerical format for Graph Neural Networks by assigning unique integer IDs to all non-literal entities, resulting in 2,835 nodes. Each predicate was also mapped to a relation ID to distinguish edge types for the R-GCN. The graph is represented using $\texttt{edge\_index}$ and $\texttt{edge\_type}$ tensors, while literal nodes were removed as they are not useful for structural learning. The final graph contains 20,338 edges and 24 relation types.
+
+
+\subsection{Label Preparation and Leakage Removal}
+
+Node labels were created using the affiliation relation, assigning each research group a unique class ID. To prevent label leakage, the affiliation and employs relations were removed since they directly reveal the target class. A label tensor $y$ was then constructed for all nodes, where labeled nodes contain their class IDs and unlabeled nodes are set to -1. This enables semi-supervised learning, where only labeled nodes contribute to training while all nodes participate in message passing.
+\subsection{Train/Test Split}
+
+Labeled nodes were split into training and test sets using an 80/20 ratio. Binary masks were created to separate training and test nodes. The model is trained in a semi-supervised setting, where only training nodes contribute to the loss while message passing is performed over the full graph.
+\section{Model Training and Evaluation}
+
+\subsection{Training of R-GCN (Relational Graph Convolutional Network)}
+The AIFB knowledge graph, summarized in Table~\ref{tab:aifb_stats}, contains 29,226 RDF triples, 2,835 unique nodes, and 47 predicates, which are reduced to 24 retained relations for the Relational Graph Convolutional Network (R-GCN). The processed graph consists of 20,338 edges and supports 5 target classes representing research group affiliations. Since no explicit node features are available, each node is encoded using a one-hot representation, enabling the model to learn exclusively from the structural and relational patterns in the graph.
+
+The R-GCN is trained using only labeled nodes, which are split into training and test sets in an 80:20 ratio with binary masks ensuring separation during optimization. The model consists of two relational graph convolution layers: the first aggregates neighborhood information using relation-specific transformations, while the second produces logits over the 5 output classes. Training is performed using cross-entropy loss and optimized with the Adam optimizer at a learning rate of 0.01 for 200 epochs in a semi-supervised learning setup.
+\begin{table}[h]
+\centering
+\caption{R-GCN Hyperparameters used for training on the AIFB dataset}
+\begin{tabular}{ll}
+\hline
+\textbf{Hyperparameter} & \textbf{Value} \\
+\hline
+Input Features Size & 2835 \\
+Hidden Channels & 16 \\
+Output Classes & 5 \\
+Number of Relations & 24 \\
+Optimizer & Adam \\
+Learning Rate & 0.01 \\
+Loss Function & CrossEntropyLoss \\
+Training Epochs & 200 \\
+Data Split Ratio & 80\% Train / 20\% Test \\
+\hline
+\end{tabular}
+\label{tab:hyperparameters}
+\end{table}
+
+\subsection{Model Evaluation}
+
+The trained R-GCN model was evaluated on previously unseen nodes using the test mask, where predictions were obtained by applying the argmax operation over the output logits. Performance was measured in terms of classification accuracy, ensuring that evaluation reflects the model’s ability to generalize to unseen labeled nodes while still leveraging the full graph structure during message passing. As reported in Table~\ref{tab:results}, the model achieves a final test accuracy of 97.22\%, indicating strong predictive performance.
+\begin{table}[h]
+\centering
+\caption{Training performance and final evaluation results of the R-GCN model}
+\begin{tabular}{ll}
+\hline
+\textbf{Metric} & \textbf{Value} \\
+\hline
+Loss at Epoch 20 & 0.1638 \\
+Final Loss (Epoch 200) & 0.0008 \\
+Train Accuracy & 0.9931\\
+Test Accuracy & 0.9722\\
+\hline
+\end{tabular}
+\label{tab:results}
+\end{table}
+The training dynamics also demonstrate effective convergence, with the loss decreasing from 0.1638 at epoch 20 to 0.0008 at epoch 200. These results suggest that the R-GCN successfully captures meaningful relational patterns from the RDF graph rather than simply memorizing training instances, leading to strong generalization performance on the held-out test set.
+
+% \section{Model Explainability}
+
+% To interpret the trained R-GCN, we use two explainability methods: GNNExplainer and Captum Integrated Gradients. Since GNNs rely on message passing, these methods help identify the most important RDF relations influencing predictions and verify whether the model learns meaningful semantic patterns.
+
+% \subsection{Single Node Explanation}
+
+% For a selected test node, explanations were generated using both GNNExplainer and Captum Integrated Gradients to uncover the most influential RDF relations that contribute to the model’s prediction. The motivation for using explanation methods is to improve the interpretability of graph neural network decisions, which are otherwise considered black-box because of their nonlinear message-passing mechanisms. In the context of RDF graphs, understanding which relations drive a prediction is particularly important, as it enables semantic interpretation of model behavior in terms of meaningful knowledge graph structure.
+% \begin{figure}[h]
+%     \centering
+%     \includegraphics[width=0.7\textwidth]{Single Node - Top Edges.png}
+%     \caption{Top RDF relations for a single node using GNNExplainer.}
+% \end{figure}\\
+
+% GNNExplainer works by creating a learnable edge mask that focuses on the neighborhood of a node, picking out the top-k edges that have the highest importance scores. Once these edges are identified, they’re translated back to RDF predicates through a relation-to-ID mapping, helping us understand which relationships are influencing the prediction. This method effectively pinpoints a compact subgraph that’s deemed essential for the model’s decision, giving us a clear, minimal explanatory structure surrounding the node.
+
+
+
+% \noindent Captum takes a different approach by calculating gradient-based feature attributions through Integrated Gradients. The size of these attributions reveals how much each edge contributes to the final prediction, and we pick the top-k edges based on their absolute values. These selected edges are then linked back to RDF relation types for easier interpretation. In contrast to GNNExplainer, which creates a discrete mask over edges, Integrated Gradients assesses importance by looking at how sensitive the model is to changes in input features along a continuous path from a baseline to the actual input.
+% \begin{figure}[h]
+%     \centering
+%     \includegraphics[width=0.7\textwidth]{Single Node - Edge Importance Plot.png}
+%     \caption{Top RDF relations for a single node using Captum Integrated Gradients.}
+% \end{figure}
+
+% Both approaches take edge-level explanations and turn them into RDF predicates, which allows for a straightforward comparison of the key relationships that affect a single node's prediction. By exploring two different explanation frameworks—optimization-based and gradient-based—we get a well-rounded view of the model's behavior. When we find important relationships that are consistent across both methods, it gives us greater confidence in their importance. However, any differences can point to the model's sensitivity or instability in its decision-making patterns.
+
+% In summary, these explanations help bridge the gap between the latent representations of GNNs and human-friendly RDF semantics, enabling a more transparent analysis of how relational structures affect individual predictions.
+
+
+
+
+% \subsection{Global Explanation across Nodes}
+
+% To understand the model’s overall decision behavior, we extend explanations from individual nodes to the full test set. While local explanations capture node-specific reasoning, global explanations reveal whether the model consistently relies on the same relational patterns across the dataset.
+
+% For each test node, we extract the top-ranked edges using both GNNExplainer and Captum Integrated Gradients. These node-level explanations are then aggregated to compute global relation importance scores based on the frequency and magnitude of selected RDF predicates.
+
+% \begin{figure}[h]
+%     \centering
+%     \includegraphics[width=0.9\textwidth]{Multiple Nodes - Imp. RDF Relations.png}
+%     \caption{Global importance of RDF relations aggregated using GNNExplainer.}
+% \end{figure}
+
+% The resulting distribution highlights whether the model depends on a small set of dominant relations or distributes importance across many predicates. In the AIFB graph, we observe that a few semantic relations consistently dominate across predictions, indicating stable relational patterns learned by the R-GCN.
+
+% Finally, comparing GNNExplainer and Captum aggregations provides insight into the robustness of explanations. A high overlap in frequently selected relations suggests strong agreement between structural (mask-based) and gradient-based attribution methods, while discrepancies indicate differences in how each method captures dependency structures in the graph.
+
+% Overall, global explanations complement local interpretations by providing a dataset-level view of relational importance, improving the transparency and interpretability of the learned GNN model.
+
+% \subsection{Difference in Faithfulness Analysis}
+
+% The faithfulness evaluation reveals clear differences between GNNExplainer and Captum Integrated Gradients on the AIFB dataset. GNNExplainer achieves a higher label flip rate ($20.0\%$) compared to Captum ($10.0\%$), indicating that its selected subgraphs have a stronger impact on model predictions.
+
+% This can be explained by the structural nature of both methods. GNNExplainer performs joint optimization over edges to identify a compact subgraph that maximizes mutual information with the prediction. This often results in tightly coupled relational patterns (e.g., \textit{publication} and \textit{isAbout}) that form critical decision pathways in the R-GCN.
+
+% In contrast, Captum Integrated Gradients computes feature attributions along a baseline path, resulting in a more distributed importance pattern across multiple message-passing routes. As a result, removing only the top-$K$ edges may still leave alternative paths active, leading to more stable predictions.
+
+% \begin{table}[h]
+% \centering
+% \renewcommand{\arraystretch}{1.2}
+% \begin{tabular}{lcc}
+% \toprule
+% \textbf{Metric} & \textbf{GNNExplainer} & \textbf{Captum IG} \\
+% \midrule
+% Execution time per node (s) & 27.39 & 4.63 \\
+% Label flip rate (\%) & 20.0 & 10.0 \\
+% Explanation type & Optimization-based & Gradient-based \\
+% Explanation sparsity & High (compact subgraph) & Medium (distributed) \\
+% \bottomrule
+% \end{tabular}
+
+% \vspace{6pt}
+
+% \caption{Faithfulness and efficiency comparison of explanation methods on the AIFB dataset.}
+% \label{tab:faithfulness_comparison}
+% \end{table}
+
+% Overall, GNNExplainer provides more structurally compact and intervention-sensitive explanations, while Captum offers faster and more scalable attributions with broader coverage of the graph structure.
+
+% \subsection{ Comparison of GNNExplainer and Captum}
+% To compare explanation stability, we aggregate global importance using both
+% GNNExplainer and Captum Integrated Gradients.
+% Both methods show strong agreement in identifying key relational predicates
+% such as publication, author, and isAbout. However, GNNExplainer tends
+% to emphasize discrete structural subgraphs, while Captum captures smoother
+% gradient-based attributions.
+% This agreement suggests that the learned model behavior is stable and not
+% dependent on a single explanation technique.
+
+
+% \begin{figure}[h]
+%     \centering
+%     \includegraphics[width=0.9\textwidth]{Top Edges Comparison - GNN & Captus Explainer.png}
+%     \caption{Comparison of global feature importance between GNNExplainer and Captum Integrated Gradients.}
+%     \label{fig:comparison}
+% \end{figure}
+
+\section{Model Explainability}
+
+To understand the decision-making process of the trained R-GCN model, two complementary explainability techniques are employed: GNNExplainer and Captum Integrated Gradients. Since graph neural networks operate through message passing over relational structures, their predictions are not directly interpretable. These methods help identify the most influential RDF relations contributing to predictions, enabling interpretation of model behavior in terms of meaningful semantic graph structures.
+
+%------------------------------------------------------
+\subsection{Local Explanation (Single Node Analysis)}
+
+Local explanations aim to interpret the model’s prediction for an individual node. A representative test node is selected, and explanations are generated using both GNNExplainer and Captum Integrated Gradients. The extracted important edges are mapped back to RDF predicates to enable semantic interpretation.
+
+%-------------------- GNNExplainer --------------------
+\subsubsection{GNNExplainer-based Explanation}
+
+GNNExplainer generates explanations by learning a soft mask over the computation graph surrounding the target node. It optimizes this mask to retain edges that maximize mutual information with the model prediction, resulting in a compact subgraph that captures the most influential relationships.
+
+%-------------------- Captum --------------------
+\subsubsection{Captum Integrated Gradients-based Explanation}
+
+Captum Integrated Gradients computes feature attributions by integrating gradients from a baseline input to the actual graph input. The magnitude of gradients indicates the importance of each edge in influencing the prediction, producing a smoother attribution distribution across relations.
+
+%-------------------- FIGURES SIDE BY SIDE --------------------
+\begin{figure}[ht]
+\centering
+
+\begin{minipage}{0.48\textwidth}
+\centering
+\includegraphics[width=\linewidth]{Single Node - Top Edges.png}
+\caption{GNNExplainer local explanation.}
+\label{fig:gnn_local}
+\end{minipage}
+\hfill
+
+\begin{minipage}{0.48\textwidth}
+\centering
+\includegraphics[width=\linewidth]{Single Node - Edge Importance Plot.png}
+\caption{Captum Integrated Gradients local explanation.}
+\label{fig:captum_local}
+\end{minipage}
+
+\end{figure}
+
+%-------------------- LOCAL DISCUSSION --------------------
+\subsubsection{Interpretation of Local Explanations}
+
+Both methods identify influential RDF relations for the selected node but differ in their explanation strategy. GNNExplainer produces sparse, discrete subgraphs by selecting the most critical edges, whereas Captum Integrated Gradients distributes importance across multiple edges based on gradient sensitivity. The overlap between both methods increases confidence in the identified relations, while differences highlight alternative relational pathways used by the R-GCN.
+
+%------------------------------------------------------
+\subsection{Global Explanation (Across Nodes)}
+
+Global explanations aim to analyze model behavior across the entire dataset by aggregating explanations from multiple test nodes. This provides insight into which RDF relations are consistently important for prediction.
+
+%-------------------- AGGREGATION --------------------
+\subsubsection{Aggregation of Local Explanations}
+
+For each correctly classified test node, top-ranked edges are extracted using both explainers. These edges are aggregated across all nodes by computing frequency and cumulative importance of RDF predicates. This results in global importance scores that reflect dataset-level relational influence.
+
+%-------------------- GLOBAL FIGURE --------------------
+\subsubsection{Global Relation Importance Analysis}
+
+The aggregated results are visualized using a single comparative figure that presents both explanation methods side by side.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.95\textwidth]{Top Edges Comparison - GNN & Captus Explainer.png}
+\caption{Global importance of RDF relations compared using GNNExplainer and Captum Integrated Gradients.}
+\label{fig:global_explanation}
+\end{figure}
+
+The results show that only a small subset of RDF predicates consistently dominates predictions across both methods. This indicates that the R-GCN learns stable semantic patterns within the AIFB knowledge graph. While GNNExplainer highlights compact structural subgraphs, Captum distributes importance more broadly, yet both agree on the most influential relations.
+
+\subsection{Faithfulness Check Analysis}
+
+Faithfulness measures how much the model's prediction changes after the important features found by an explanation method are removed. If removing these features causes a larger change in the prediction, the explanation is considered more faithful.
+
+\begin{table}[ht]
+\centering
+\caption{Faithfulness Evaluation Results for GNNExplainer}
+\label{tab:gnn_faithfulness}
+\begin{tabular}{lc}
+\hline
+\textbf{Metric} & \textbf{Value} \\
+\hline
+Total Nodes Evaluated & 10 \\
+Average Confidence Drop ($\Delta$ Confidence) & 0.0038 (0.4\%) \\
+Prediction Label Flip Rate & 20.0\% \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\caption{Faithfulness Evaluation Results for Captum Explainer}
+\label{tab:captum_faithfulness}
+\begin{tabular}{lc}
+\hline
+\textbf{Metric} & \textbf{Value} \\
+\hline
+Total Nodes Evaluated & 10 \\
+Average Confidence Drop ($\Delta$ Confidence) & 0.0014 (0.1\%) \\
+Prediction Label Flip Rate & 10.0\% \\
+\hline
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:gnn_faithfulness} and Table~\ref{tab:captum_faithfulness}, we can see the faithfulness results for both GNNExplainer and Captum Explainer. GNNExplainer produced a confidence drop of 0.0038 (0.4\%) and a prediction label flip rate of 20.0\%. Captum Explainer produced a smaller confidence drop of 0.0014 (0.1\%) and a label flip rate of 10.0\%. This means that removing the important features found by GNNExplainer changed the model's predictions more than removing the features found by Captum Explainer. Therefore, GNNExplainer shows slightly better faithfulness in this experiment. However, the confidence drops for both methods are small, which means the model's predictions are still quite stable after the important features are removed.
+%-------------------- DISCUSSION --------------------
+
+
+%------------------------------------------------------
+\subsection{Overall Performance}
+
+This section compares GNNExplainer and Captum Explainer based on execution time, sparsity, and faithfulness-related metrics.
+
+%-------------------- TABLE 1 --------------------
+\begin{table}[ht]
+\centering
+\caption{Overall Performance of GNNExplainer}
+\label{tab:gnn_overall}
+\begin{tabular}{lc}
+\hline
+\textbf{Metric} & \textbf{Value} \\
+\hline
+Average Execution Time & 27.3934 seconds / node \\
+Average Sparsity & 99.90\% \\
+Average Confidence Drop ($\Delta$ Conf) & 0.0021 (0.2\%) \\
+Prediction Label Flip Rate & 20.0\% \\
+\hline
+\end{tabular}
+\end{table}
+
+%-------------------- TABLE 2 --------------------
+\begin{table}[ht]
+\centering
+\caption{Overall Performance of Captum Explainer}
+\label{tab:captum_overall}
+\begin{tabular}{lc}
+\hline
+\textbf{Metric} & \textbf{Value} \\
+\hline
+Average Execution Time & 4.6322 seconds / node \\
+Average Sparsity & 99.90\% \\
+Average Confidence Drop ($\Delta$ Conf) & 0.0052 (0.5\%) \\
+Prediction Label Flip Rate & 50.0\% \\
+\hline
+\end{tabular}
+\end{table}
+
+%-------------------- DESCRIPTION --------------------
+Table~\ref{tab:gnn_overall} and Table~\ref{tab:captum_overall} present the overall performance of the two explanation methods. GNNExplainer takes more time per node but produces very sparse explanations with strong stability in predictions. Captum Explainer is much faster and also gives sparse explanations, though it tends to lead to a greater shift in predictions after the explanation-based removal. Overall, GNNExplainer is slower but more stable, while Captum Explainer is faster but less stable in this experiment.
+
+\section{Conclusion}
+
+This mini-project focused on benchmarking instance-level explainability methods for a Relational Graph Convolutional Network (R-GCN) applied to the AIFB knowledge graph. The results indicate that both GNNExplainer and Captum Integrated Gradients are quite effective at identifying the RDF relations that significantly influence model predictions.
+
+Our experiments show that Captum's gradient-based attribution is a more computationally efficient option while still offering a level of faithfulness comparable to optimization-based explanations. Across both methods, we consistently found that key semantic relations such as \textit{isAbout}, \textit{publication}, and \textit{publishes} were the main contributors to classification decisions.
+
+Overall, this study illustrates that integrating relational graph learning with explainability techniques can enhance the interpretability and transparency of GNN-based models on knowledge graphs, with each method providing different trade-offs between efficiency and structural compactness.
+
+
+\section{Contributions of Team Members}
+
+The project was collaboratively developed by Aditi Parulekar, Zalak Chauhan, and Ankith Bharadwaj. Aditi handled data extraction and preprocessing, including RDF graph construction, label preparation, and dataset preprocessing. Zalak Chauhan implemented the Captum-based explainability pipeline, including Integrated Gradients computation and relation-level attribution analysis. Ankith Bharadwaj implemented the GNNExplainer-based explainability pipeline, focusing on extracting important subgraphs and relation-level explanations. All team members jointly contributed to model training, evaluation, comparison of explainability methods, result interpretation, and preparation of the final report.
+
+
+
+\section*{Acknowledgements}
+
+We would like to thank the course instructors for their guidance and support throughout this project. We also acknowledge the availability of the AIFB dataset and the PyTorch Geometric library, which made the implementation of graph-based learning and explainability possible. Their resources and tools were essential for completing this project successfully.
+
+\section*{Declaration of the Use of AI Tools}
+
+AI tools were used as a support for coding and report writing, including structuring the Python pipeline (data processing, R-GCN training, and explainability methods) and improving the clarity and formatting of the report. All model design decisions, experiments, and result interpretations were carried out and verified by the authors. The AI tool did not generate any experimental results or conclusions, and the authors take full responsibility for the final content of the report.
+
+
+\begin{thebibliography}{6}
+
+
+\bibitem{pyg}
+PyTorch Geometric Documentation. https://pytorch-geometric.readthedocs.io/
+
+\bibitem{rgcn}
+Schlichtkrull et al., Modeling Relational Data with Graph Convolutional Networks (R-GCN), 2017.
+
+\bibitem{gnnexplainer}
+Ying et al., GNNExplainer: Generating Explanations for Graph Neural Networks, 2019.
+
+\bibitem{captum}
+Captum: Model Interpretability for PyTorch. https://captum.ai/
+
+\end{thebibliography}
+\end{document}
