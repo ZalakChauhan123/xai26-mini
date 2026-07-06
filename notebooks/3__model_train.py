@@ -160,4 +160,4 @@ pred = out.argmax(dim=1)
 correct = (pred[data.test_mask] == data.y[data.test_mask]).sum()
 accuracy = int(correct) / int(data.test_mask.sum())
 
-print("\nAccuracy - ", accuracy)
+# print("\nAccuracy - ", accuracy)

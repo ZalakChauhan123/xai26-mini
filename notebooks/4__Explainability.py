@@ -41,7 +41,7 @@ from model_train import (model, data)
 from feature_engineering import (predicate_to_id, edge_type)
 
 test_node = test_nodes[0]
-print("Test Node : ", test_node)
+# print("Test Node : ", test_node)
 
 # Explore Explanations
 print(explaination_gnn)
@@ -52,6 +52,7 @@ print(explaination_gnn.edge_mask.max())
 # PLOT 1 : Single Node - Top Edges
 # Most important RDF relations behind the explanation of a single test node.
 # ---------------------------------------------------------------------------
+print("GNN Explainer - Perform Local Explaination...")
 top_edges = explaination_gnn.edge_mask.topk(10)
 important_edge_indices = top_edges.indices
 
@@ -67,7 +68,7 @@ for idx in important_edge_indices:
     important_relations.append(clean_relation)
 
 relation_counts = Counter(important_relations)
-print(relation_counts)
+# print(relation_counts)
 
 relations = list(relation_counts.keys())
 counts = list(relation_counts.values())
@@ -86,11 +87,12 @@ plt.close()
 # PLOT 2 : Multiple Nodes - Imp. RDF Relations
 # Aggregate the top edges across all test nodes -> global feature importance.
 # ---------------------------------------------------------------------------
+print("GNN Explainer - Perform Global Explaination...")
 all_relation_lists = []
 
 for node in test_nodes:
-    print("Explaining Node:", node)
-    print("-------")
+    # print("Explaining Node:", node)
+    # print("-------")
 
     explanation = explainer(
         x=data.x,
@@ -115,7 +117,7 @@ for relation_list in all_relation_lists:
     all_relations.extend(relation_list)
 
 relation_counter = Counter(all_relations)
-print(relation_counter)
+# print(relation_counter)
 
 # Sort from least to most frequent (largest ends up at the top of a barh plot)
 sorted_relation_counts = sorted(relation_counter.items(), key=lambda x: x[1], reverse=False)
@@ -303,7 +305,6 @@ else:
 print("=" * 60)
 print(f"{'GNNEXPLAINER OVERALL PERFORMANCE REPORT':^60}")
 print("=" * 60)
-print(f"Total Nodes Evaluated                   : {total_nodes_evaluated}")
 print(f"Average Execution Time                  : {avg_time:.4f} seconds / node")
 print(f"Average Sparsity (K={k})                 : {avg_sparsity * 100:.2f}%")
 print(f"Average Confidence Drop (Delta Conf)    : {avg_conf_drop:.4f} ({avg_conf_drop * 100:.1f}%)")
