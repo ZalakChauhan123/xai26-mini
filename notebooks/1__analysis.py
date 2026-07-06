@@ -50,9 +50,9 @@ for s, p, o in g:
 
 all_nodes = subjects.union(objects)
 
-print("Unique subjects:", len(subjects))
-print("Unique objects:", len(objects))
-print("Total unique nodes:", len(all_nodes))
+print("----- Unique subjects:", len(subjects))
+print("----- Unique objects:", len(objects))
+print("----- Total unique nodes:", len(all_nodes))
 
 # Get all unique predicates (properties)
 predicates = set()
@@ -63,17 +63,18 @@ for s, p, o in g:
 print(f"\nTotal unique predicates: {len(predicates)}")
 
 # Show first 20 Properties
-print("\nAll properties in dataset:")
+# print("\nAll properties in dataset:")
 for pred in sorted(predicates)[:20]:  # Show first 20
-    print(f"  - {pred.split('#')[-1]}")  # Show readable name
+    # print(f"  - {pred.split('#')[-1]}")  # Show readable name
 
-# Count how many times each property appears
-predicates_count = Counter()
+    # Count how many times each property appears
+    predicates_count = Counter()
+
 for s, p, o in g:
     predicates_count[str(p).split('#')[-1]] += 1
 
-print("Top 15 most common properties:")
-for pred, count in predicates_count.most_common(15):
+print("----- Common Predicates in dataset: -----")
+for pred, count in predicates_count.most_common(10):
     print(f"  {pred}: {count}")
 
 # What are the main entities?
@@ -83,42 +84,9 @@ entity_types = Counter()
 for s, p, o in g.triples((None, rdf_type, None)):
     entity_types[str(o).split('#')[-1]] += 1
 
-print("Entity types in dataset:")
-for etype, count in entity_types.most_common(20):
+print("\n----- Common Entities in dataset: -----")
+for etype, count in entity_types.most_common(5):
     print(f"  {etype}: {count}")
-
-# Show first 10 triples
-print("Sample triples from dataset:")
-for i, (s, p, o) in enumerate(g):
-    if i >= 10:
-        break
-    print(f"{str(s)[-30:]} → {str(p).split('#')[-1]} → {str(o)[-40:]}")
-
-degree_counter = Counter()
-
-for s, p, o in g:
-    degree_counter[s] += 1
-    degree_counter[o] += 1
-
-print("\nTop connected nodes:\n")
-
-for node, degree in degree_counter.most_common(10):
-    print(degree, node)
-
-for s, p, o in g:
-    if "publication" in str(p).lower():
-        print(s, p, o)
-        break
-
-# Build a DataFrame view of the triples
-triples = []
-
-for s, p, o in g:
-    triples.append([str(s), str(p), str(o)])
-
-df = pd.DataFrame(triples, columns=["subject", "predicate", "object"])
-
-print(df.head())
 
 
 # ---------------------------------------------------------------------------
@@ -151,10 +119,11 @@ for s, p, o in g:
         type_counter[str(o)] += 1
 
 # Count Nodes
-print("\nNode Type Distribution:\n")
+# print("\nNode Type Distribution:\n")
 
 for node_type, count in type_counter.most_common():
-    print(count, node_type)
+    # print(count, node_type)
+    pass
 
 # Prepare data for Ploting
 labels = []
@@ -189,9 +158,6 @@ predicate_counter = Counter()
 for s, p, o in g:
     predicate_counter[str(p)] += 1
 
-for pred, count in predicate_counter.most_common(30):
-    print(count, pred)
-
 TARGET_PREDICATE = "http://swrc.ontoware.org/ontology#affiliation"
 swrc_name = rdf.term.URIRef("http://swrc.ontoware.org/ontology#name")
 
@@ -204,12 +170,7 @@ for s, p, o in g:
         label_counter[str(o)] += 1
         research_groups[str(o)] = None
 
-print("\nLabel Distribution:\n")
-
-for label, count in label_counter.items():
-    print(count, label)
-
-# Get research group names from swrc:name property
+# 1. FIRST: Get research group names from swrc:name property
 for group_uri in research_groups.keys():
     group_ref = rdf.term.URIRef(group_uri)
 
@@ -222,6 +183,12 @@ for group_uri in research_groups.keys():
         short_name = group_uri.split("/")[-1]
         short_name = short_name.split("#")[-1]
         research_groups[group_uri] = short_name
+
+# 2. SECOND: Print the updated distribution with clean names
+print("\n ----- Research Group Label Distribution: -----")
+for group_uri, count in sorted(label_counter.items(), key=lambda x: x[1], reverse=True):
+    clean_name = research_groups[group_uri]
+    print(f"{count}: {clean_name}")
 
 # Prepare Data for Visualization
 labels = []
@@ -243,3 +210,4 @@ plt.savefig(ANALYSIS_DIR / "Research Group Label Distribution.png", bbox_inches=
 plt.close()
 
 print("\n✅ Analysis plots saved to:", ANALYSIS_DIR)
+print("✅ COMPLETE STEP 1 -- DATA LOADING & ANALYSIS")
