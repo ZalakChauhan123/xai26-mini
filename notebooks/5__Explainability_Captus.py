@@ -47,7 +47,7 @@ from model_explainability import (explainer)
 
 # Choose test node
 test_node = test_nodes[0]
-print("Evaluating Single Node with Captum:", test_node)
+# print("Evaluating Single Node with Captum:", test_node)
 
 
 # ---------------------------------------------------------------------------
@@ -76,7 +76,7 @@ for idx in important_edge_indices_captum:
     important_relations_captum.append(clean_relation)
 
 relation_counts_captum = Counter(important_relations_captum)
-print("\nCaptum Relation Counts:", relation_counts_captum)
+# print("\nCaptum Relation Counts:", relation_counts_captum)
 
 relations_c = list(relation_counts_captum.keys())
 counts_c = list(relation_counts_captum.values())
@@ -178,7 +178,7 @@ from feature_engineering import g
 from rdflib import Literal
 
 predicates = [str(p).split("#")[-1] for s, p, o in g if not isinstance(o, Literal)]
-print(Counter(predicates))
+# print(Counter(predicates))
 
 
 # ---------------------------------------------------------------------------
@@ -332,7 +332,6 @@ else:
 print("=" * 60)
 print(f"{'CAPTUM EXPLAINER OVERALL PERFORMANCE REPORT':^60}")
 print("=" * 60)
-print(f"Total Nodes Evaluated                 : {total_nodes_evaluated}")
 print(f"Average Execution Time                : {avg_time:.4f} seconds / node")
 print(f"Average Sparsity (K={k})               : {avg_sparsity * 100:.2f}%")
 print(f"Average Confidence Drop (Delta Conf)  : {avg_conf_drop:.4f} ({avg_conf_drop * 100:.1f}%)")
