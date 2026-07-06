@@ -60,6 +60,7 @@ This document provides step-by-step instructions for setting up the environment,
    - [Linux / macOS Setup](#a-linux--macos-setup)
    - [Windows Setup (PowerShell / Command Prompt)](#b-windows-setup-native-powershell--cmd)
    - [Windows Setup (WSL2 / Git Bash Recommended)](#c-windows-setup-wsl2--git-bash-recommended)
+   - [Windows Setup (Batch File Alternative)](#d-Windows-Setup-(Batch-File-Alternative))
 3. [Configuring Dataset Paths for Windows](#3-configuring-dataset-paths-for-windows)
    - [Target Files That Require Path Updates](#target-files-that-require-path-updates)
    - [How to Fix Path Slashes for Windows](#how-to-fix-path-slashes-for-windows)
