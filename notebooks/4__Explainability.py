@@ -147,7 +147,7 @@ confidence_drops = []
 label_flips = 0
 total_nodes_evaluated = 0
 
-print(f"\nRunning GNNExplainer Faithfulness batch check over {len(eval_nodes)} nodes...\n")
+print(f"\nRunning GNNExplainer Faithfulness batch check...\n")
 
 for node_id in eval_nodes:
     node_idx = int(node_id)
