@@ -169,6 +169,44 @@ pip install -r requirements.txt
 
 ---
 
+### D. Windows Setup (Batch File Alternative)
+
+If **WSL2** or **Git Bash** is unavailable or not functioning correctly on your system, you can execute the complete pipeline using the provided Windows batch file.
+
+The batch file automates the execution of each stage of the pipeline in the correct order, eliminating the need to manually run each Python script.
+
+#### Steps
+
+1. Open **Command Prompt** or **PowerShell**.
+2. Navigate to the project root directory.
+3. Ensure that your Python virtual environment has been activated.
+4. Run the batch file:
+
+```powershell
+.\model.bat
+```
+
+or from Command Prompt:
+
+```cmd
+model.bat
+```
+
+The batch file automatically performs the following tasks:
+
+1. Executes graph feature engineering.
+2. Trains the Relational GNN model.
+3. Generates GNNExplainer visualizations.
+4. Runs Captum explainability and faithfulness evaluation.
+
+> **Note:** Before running `model.bat`, ensure that all required dependencies have been installed using:
+>
+> ```bash
+> pip install -r requirements.txt
+> ```
+>
+> Additionally, verify that any required dataset paths have been configured correctly as described in the **Configuring Dataset Paths for Windows** section.
+
 # 3. Configuring Dataset Paths for Windows
 
 When running natively on Windows, file system paths use backslashes (`\`) instead of forward slashes (`/`). If hardcoded Linux paths are present in the scripts, Windows may throw a `FileNotFoundError`.
