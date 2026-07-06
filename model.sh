@@ -52,7 +52,7 @@ echo "==> [2/5] Graph Pre-Processing"
 "$PY" "$ROOT/notebooks/2__Graph_PreProcessing.py"
 
 echo "==> [3/5] Model Training (R-GCN)"
-"$PY" "$ROOT/notebooks/3__model_train.py"
+"$PY" "$ROOT/src/model_train.py"
 
 echo "==> [4/5] Explainability (GNNExplainer)"
 "$PY" "$ROOT/notebooks/4__Explainability.py"
