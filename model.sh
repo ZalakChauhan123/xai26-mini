@@ -45,26 +45,26 @@ mkdir -p "$ROOT/outputs/reports"
 # ----------------------------------------------------------------------------
 # Run the pipeline
 # ----------------------------------------------------------------------------
-echo "==> [1/5] Data Analysis"
+echo "===============> [1/5] Data Analysis"
 "$PY" "$ROOT/notebooks/1__analysis.py"
 
-echo "==> [2/5] Graph Pre-Processing"
+echo "===============> [2/5] Graph Pre-Processing"
 "$PY" "$ROOT/notebooks/2__Graph_PreProcessing.py"
 
-echo "==> [3/5] Model Training (R-GCN)"
+echo "===============> [3/5] Model Training (R-GCN)"
 "$PY" "$ROOT/src/model_train.py"
 
-echo "==> [4/5] Explainability (GNNExplainer)"
+echo "===============> [4/5] Explainability (GNNExplainer)"
 "$PY" "$ROOT/notebooks/4__Explainability.py"
 
-echo "==> [5/5] Explainability (Captum) + Report"
+echo "===============> [5/5] Explainability (Captum) + Report"
 "$PY" "$ROOT/notebooks/5__Explainability_Captus.py"
 
 # ----------------------------------------------------------------------------
 # Show the generated plots (analysis, GNN explainer, Captum explainer)
 # ----------------------------------------------------------------------------
 echo ""
-echo "==> Opening generated plots ..."
+echo "===============> Opening generated plots ..."
 open "$ROOT/outputs/plots/Analysis/"*.png \
      "$ROOT/outputs/plots/Model_Explainability/GNN_Explainer/"*.png \
      "$ROOT/outputs/plots/Model_Explainability/Captus_Explainer/"*.png 2>/dev/null || true
