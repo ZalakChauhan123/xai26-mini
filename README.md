@@ -19,7 +19,7 @@ The workflow is designed for end-to-end execution, moving from graph feature pro
 model.sh serves as the master orchestration script. It initializes the required output directories (such as mega_folder/plots/ and mega_folder/reports/) and sequentially executes the Python scripts in src/. The interactive Jupyter notebooks in notebooks/ mirror this exact pipeline for step-by-step visual debugging and experimentation.
 
 ### Requirements ###
-- OS: Linux, macOS, or Windows (via WSL2 recommended for bash script execution)
+- OS: Linux, macOS, or Windows (via WSL2 recommended for bash script execution) / Use .Bat file if WSL2 doesn't work in Windows
 
 - Python: Version 3.10 or later
 
