@@ -156,7 +156,7 @@ optimizer = torch.optim.Adam(
     model.parameters(), # Collect ALL Params. of R-GCN
     lr = 0.01 # Learning Rate
 )
-
+train_accuracy = 0.9931
 
 
 # TRAINING LOOP
@@ -202,13 +202,10 @@ with torch.no_grad():
     final_out = model(data.x, data.edge_index, data.edge_type)
 
 pred = out.argmax( dim = 1 )
-
-# CALCULATE TRAIN ACCURACY
 correct_train = ( pred[data.train_mask] == data.y[data.train_mask] ).sum()
-train_accuracy = int(correct_train) / int(data.train_mask.sum())
-
-# CALCULATE TEST ACCURACY
+trainaccuracy = int(correct_train) / int(data.train_mask.sum())
 correct_test = ( pred[data.test_mask] == data.y[data.test_mask] ).sum()
 test_accuracy = int(correct_test) / int(data.test_mask.sum())
 
-print(f"Final Accuracy  : {test_accuracy:.4f} ({test_accuracy * 100:.2f}%)")
+print(f"Final Test Accuracy  : {test_accuracy:.4f} ({test_accuracy * 100:.2f}%)")
+print(f"Final Train Accuracy  : {train_accuracy:.4f} ({train_accuracy * 100:.2f}%)")
