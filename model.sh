@@ -46,7 +46,7 @@ mkdir -p "$ROOT/outputs/reports"
 # Run the pipeline
 # ----------------------------------------------------------------------------
 echo "==> [1/5] Data Analysis"
-"$PY" "$ROOT/src/1__analysis.py"
+"$PY" "$ROOT/notebooks/1__analysis.py"
 
 echo "==> [2/5] Graph Pre-Processing"
 "$PY" "$ROOT/notebooks/2__Graph_PreProcessing.py"

@@ -197,12 +197,18 @@ for epoch in range(1, 201):
 # MODEL EVALUATION
 model.eval()
 
+# Generate predictions without tracking gradients (saves memory)
+with torch.no_grad():
+    final_out = model(data.x, data.edge_index, data.edge_type)
+
 pred = out.argmax( dim = 1 )
 
-correct = (
-    pred[data.test_mask] == data.y[data.test_mask]
-).sum()
+# CALCULATE TRAIN ACCURACY
+correct_train = ( pred[data.train_mask] == data.y[data.train_mask] ).sum()
+train_accuracy = int(correct_train) / int(data.train_mask.sum())
 
-accuracy = int(correct) / int(data.test_mask.sum())
+# CALCULATE TEST ACCURACY
+correct_test = ( pred[data.test_mask] == data.y[data.test_mask] ).sum()
+test_accuracy = int(correct_test) / int(data.test_mask.sum())
 
-print("Accuracy - ", accuracy)
+print(f"Final Accuracy  : {test_accuracy:.4f} ({test_accuracy * 100:.2f}%)")
